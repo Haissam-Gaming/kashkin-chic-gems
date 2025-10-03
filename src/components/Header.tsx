@@ -1,13 +1,29 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingCart, Menu, X, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { cartCount } = useCart();
   const location = useLocation();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -40,7 +56,7 @@ const Header = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Link to="/cart" className="relative">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -51,6 +67,22 @@ const Header = () => {
               )}
             </Button>
           </Link>
+
+          {user ? (
+            <Link to="/admin" className="hidden md:block">
+              <Button variant="ghost" size="sm">
+                <User className="h-4 w-4 mr-1" />
+                Account
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/auth" className="hidden md:block">
+              <Button variant="ghost" size="sm">
+                <User className="h-4 w-4 mr-1" />
+                Login
+              </Button>
+            </Link>
+          )}
 
           {/* Mobile Menu Button */}
           <Button
@@ -80,6 +112,23 @@ const Header = () => {
                 {link.label}
               </Link>
             ))}
+            {user ? (
+              <Link
+                to="/admin"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium transition-smooth hover:text-primary"
+              >
+                Account
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium transition-smooth hover:text-primary"
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}

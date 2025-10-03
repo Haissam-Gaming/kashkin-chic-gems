@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { Truck, MessageCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import heroImage from '@/assets/hero-jewellery.jpg';
 
 const Home = () => {
+  const { products, loading } = useProducts();
   const featuredProducts = products.slice(0, 4);
 
   return (
@@ -85,18 +86,26 @@ const Home = () => {
               Discover our most loved pieces
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-          <div className="text-center mt-12">
-            <Link to="/shop">
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                View All Products
-              </Button>
-            </Link>
-          </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              <div className="text-center mt-12">
+                <Link to="/shop">
+                  <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                    View All Products
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </section>
     </div>

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 
 const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const { products, loading } = useProducts();
   const categories = ['All', 'Rings', 'Bracelets', 'Necklaces', 'Earrings'];
 
   const filteredProducts =
@@ -36,16 +37,24 @@ const Shop = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No products found in this category.</p>
+            <p className="text-muted-foreground">Loading products...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No products found in this category.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

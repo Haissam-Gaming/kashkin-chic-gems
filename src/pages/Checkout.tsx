@@ -6,10 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+
+const checkoutSchema = z.object({
+  name: z.string().min(2, "Full name must be at least 2 characters").max(100),
+  phone: z.string().min(8, "Phone number must be at least 8 digits").max(20),
+  address: z.string().min(10, "Address must be at least 10 characters").max(200),
+  area: z.string().min(2, "Area is required"),
+});
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -19,18 +29,42 @@ const Checkout = () => {
 
   const areas = ['Kuwait City', 'Hawally', 'Salmiya', 'Jabriya', 'Ahmadi', 'Farwaniya', 'Other'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    if (!formData.name || !formData.phone || !formData.address || !formData.area) {
-      toast.error('Please fill in all fields');
-      return;
-    }
+    try {
+      checkoutSchema.parse(formData);
 
-    // Simulate order placement
-    toast.success('Order placed successfully! We will contact you soon.');
-    clearCart();
-    navigate('/');
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const { error } = await supabase.from("orders").insert([
+        {
+          user_id: session?.user?.id || null,
+          full_name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          delivery_area: formData.area,
+          items: cart as any,
+          total_amount: cartTotal,
+          status: "pending",
+        },
+      ]);
+
+      if (error) throw error;
+
+      toast.success('Order placed successfully! We will contact you soon.');
+      clearCart();
+      navigate('/');
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || 'Failed to place order. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (cart.length === 0) {
@@ -112,9 +146,10 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     size="lg"
+                    disabled={loading}
                     className="w-full gradient-gold hover:opacity-90 transition-smooth"
                   >
-                    Place Order
+                    {loading ? 'Placing Order...' : 'Place Order'}
                   </Button>
                 </form>
               </CardContent>
